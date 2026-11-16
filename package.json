@@ -1,0 +1,19 @@
+{
+  "name": "bubbler-mobileapp",
+  "version": "1.0.3",
+  "private": true,
+  "description": "Bubbler Admin Mobile App (iOS & Android)",
+  "scripts": {
+    "sync": "cap sync",
+    "sync:ios": "cap sync ios",
+    "sync:android": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor/android": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
