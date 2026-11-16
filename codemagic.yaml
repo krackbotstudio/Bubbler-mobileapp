@@ -1,12 +1,9 @@
 workflows:
-  bubbler-admin-ios-release:
-    name: Bubbler Admin iOS Release (App Store / TestFlight)
+  bubbler-admin-ios:
+    name: Bubbler Admin iOS Build (.ipa)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.bubbleradmin
       vars:
         BUNDLE_ID: "com.bubbleradmin"
         APP_NAME: "Bubbler Admin"
@@ -30,63 +27,10 @@ workflows:
           PLIST="ios/App/App/Info.plist"
           if [ -f "$PLIST" ]; then
             /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $APP_NAME" "$PLIST"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$PLIST" 2>/dev/null || true
           fi
 
-      - name: Set up code signing
-        script: |
-          xcode-project use-profiles
-
-      - name: Build IPA for App Store / TestFlight
-        script: |
-          xcode-project build-ipa \
-            --workspace "ios/App/App.xcworkspace" \
-            --scheme "App"
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-
-  bubbler-admin-ios-adhoc:
-    name: Bubbler Admin iOS Ad-Hoc / Direct Install
-    max_build_duration: 60
-    instance_type: mac_mini_m2
-    environment:
-      ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: com.bubbleradmin
-      vars:
-        BUNDLE_ID: "com.bubbleradmin"
-        APP_NAME: "Bubbler Admin"
-      xcode: latest
-      cocoapods: default
-      node: 20
-    scripts:
-      - name: Install dependencies & setup Capacitor iOS
-        script: |
-          npm install --legacy-peer-deps
-          npx cap add ios || true
-          npx cap sync ios
-
-      - name: Configure iOS Icons and Info.plist
-        script: |
-          ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
-          if [ -d "$ICON_DEST" ] && [ -f "AppIcon.png" ]; then
-            cp "AppIcon.png" "$ICON_DEST/AppIcon-512@2x.png"
-            cp "AppIcon.png" "$ICON_DEST/AppIcon.png"
-          fi
-          PLIST="ios/App/App/Info.plist"
-          if [ -f "$PLIST" ]; then
-            /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $APP_NAME" "$PLIST"
-          fi
-
-      - name: Set up code signing
-        script: |
-          xcode-project use-profiles
-
-      - name: Build IPA
+      - name: Build iOS App (.ipa)
         script: |
           xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
