@@ -1,9 +1,14 @@
 workflows:
   bubbler-admin-ios:
-    name: Bubbler Admin iOS Build (.ipa)
+    name: Bubbler Admin iOS Release (App Store / TestFlight)
     max_build_duration: 60
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic Dark to White
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.bubbleradmin
       vars:
         BUNDLE_ID: "com.bubbleradmin"
         APP_NAME: "Bubbler Admin"
@@ -16,6 +21,10 @@ workflows:
           npm install --legacy-peer-deps
           npx cap add ios || true
           npx cap sync ios
+
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
 
       - name: Configure iOS Icons and Info.plist
         script: |
@@ -32,23 +41,15 @@ workflows:
 
       - name: Build iOS App (.ipa)
         script: |
-          mkdir -p build/ios/ipa
-          xcodebuild build \
-            -workspace "ios/App/App.xcworkspace" \
-            -scheme "App" \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -derivedDataPath "build/DerivedData" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
-
-          mkdir -p build/ios/ipa/Payload
-          cp -r build/DerivedData/Build/Products/Release-iphoneos/App.app build/ios/ipa/Payload/
-          cd build/ios/ipa
-          zip -qr BubblerAdmin.ipa Payload
-          rm -rf Payload
+          xcode-project build-ipa \
+            --workspace "ios/App/App.xcworkspace" \
+            --scheme "App"
 
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
