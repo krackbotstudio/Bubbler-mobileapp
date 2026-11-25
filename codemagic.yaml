@@ -53,6 +53,30 @@ workflows:
             /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $APP_VERSION" "$PLIST"
             BUILD_VER="${BUILD_NUMBER:-2}"
             /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_VER" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_VER" "$PLIST"
+            
+            # Permissions for Camera, Microphone, Photo Library and Bluetooth
+            /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Bubbler needs camera access to scan garment tags and QR codes.'" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Bubbler needs camera access to scan garment tags and QR codes.'" "$PLIST"
+            /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Bubbler needs microphone access for video capture.'" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'Bubbler needs microphone access for video capture.'" "$PLIST"
+            /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Bubbler needs photo library access to upload garment tag photos and branch logos.'" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Bubbler needs photo library access to upload garment tag photos and branch logos.'" "$PLIST"
+            /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'Bubbler connects to wireless thermal receipt and tag printers.'" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSBluetoothAlwaysUsageDescription 'Bubbler connects to wireless thermal receipt and tag printers.'" "$PLIST"
+            /usr/libexec/PlistBuddy -c "Add :NSBluetoothPeripheralUsageDescription string 'Bubbler connects to wireless thermal receipt and tag printers.'" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :NSBluetoothPeripheralUsageDescription 'Bubbler connects to wireless thermal receipt and tag printers.'" "$PLIST"
+          fi
+
+          # Enable camera & media capture permission in Capacitor WKWebView delegation (iOS 15+)
+          DELEGATION_FILE=$(find . -name "WebViewDelegationHandler.swift" 2>/dev/null | head -n 1)
+          if [ -n "$DELEGATION_FILE" ] && [ -f "$DELEGATION_FILE" ]; then
+            if ! grep -q "requestMediaCapturePermissionFor" "$DELEGATION_FILE"; then
+              echo "Patching $DELEGATION_FILE for WKWebView media capture..."
+              cat << 'EOF' >> "$DELEGATION_FILE"
+
+extension WebViewDelegationHandler {
+    @available(iOS 15.0, *)
+    public func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+        decisionHandler(.grant)
+    }
+}
+EOF
+            fi
           fi
 
       - name: Build iOS App (.ipa)
